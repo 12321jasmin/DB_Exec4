@@ -11,6 +11,11 @@ public class main {
 
     PersistenceManager pm =  PersistenceManager.getInstance();
 
+    public static void main(String [] args)
+    {
+
+    }
+
 
 
 }
