@@ -1,15 +1,9 @@
 import java.util.Scanner;
-<<<<<<< HEAD
-import org.apache.commons.cli.*;
-
-public class main{
-=======
 
 public class main {
->>>>>>> 67410e6cdba12d4f03990f85a5aad021b6829df2
 
     public static void main(String args[]) {
-        String taid;
+        int ptaid = 0;
 
         Scanner sc = new Scanner(System.in);
 
@@ -23,7 +17,7 @@ public class main {
                 String input = sc.nextLine();
 
                 if (input.contains("start")) {
-                    pm.beginTransaction();
+                    ptaid = pm.beginTransaction();
                     System.out.println("Your transaction has started. You can now insert data");
                     break;
                 } else {
@@ -34,7 +28,7 @@ public class main {
             while (true) {
                 String[] inputData = new String[0];
 
-                if (inputData[0]!=null) {
+                if (inputData != null && inputData.length > 0) {
                     System.out.println("save - To save your data in the database.");
                 }
 
@@ -44,12 +38,17 @@ public class main {
                 inputData = input.split(" ");
 
                 if (inputData.length == 3 && inputData[0].equals("add") && isNumeric(inputData[1])) {
-                    System.out.println("geschafft");
-                    input = sc.nextLine();
-                    System.out.println("geschafft");
+                    if (pm.write(ptaid, Integer.parseInt(inputData[1]), inputData[2])){
+                        System.out.println("Data was saved to the buffer. Add more data to the buffer");
+                    }
+                    System.out.println("The ID you are accessing is currently not available, please wait or take another ID");
                 } else if (input.equals("end")) {
                     System.out.println("You have ended the transaction. The data will be now be saved");
-                    //pm.endtransaction()
+                    pm.endTransaction(ptaid);
+                    System.out.println("start - Will start a new transaction");
+                    break;
+                } else {
+                    System.out.println("Wrong command");
                 }
 
             }
