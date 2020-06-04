@@ -8,7 +8,8 @@ public class PersistenceManager {
     private static PersistenceManager single_instance = null;
 
     // variable of type String
-    public Hashtable<Integer, Hashtable> buffer = new Hashtable<Integer, Hashtable> ();
+    public Hashtable<Integer, String> buffer = new Hashtable<Integer, String> ();
+    public Hashtable<Integer, Set<Integer>> activeTrans = new Hashtable<Integer, Set<Integer>> ();
     public int ptaid = 0;
     public int ptLSN = 0;
 
@@ -28,56 +29,54 @@ public class PersistenceManager {
     }
 
     public int beginTransaction(){
-        return ptaid + 1;
+        ptaid ++;
+        //add to activetrans
+        return ptaid;
     }
 
     public int getLSN(){
-        int LSN = ptLSN;
         ptLSN ++;
-        return LSN;
+        return ptLSN;
     }
 
-    public boolean commit(int taid){
-        Hashtable<Integer, String> tcontent = buffer.get(taid);
+    public boolean endTransaction(int taid){
+        Set<Integer> changedPages = activeTrans.get(taid);
 
         //get all keys (pageid) of the buffer belonging to the transaction ID
-        Set<Integer> keys = tcontent.keySet();
-        Iterator itr = keys.iterator();
 
-        int key;
-        String data;
-
-        while(itr.hasNext()){
-
-            key = (int) itr.next();
-            data = tcontent.get(key);
-
-            makePersistent(taid, key, data);
-
-        }
 
         return false;
     }
 
-
-    public boolean makePersistent(int taid, int pageid, String data){
-
-        return false;
-    }
 
     public boolean write (int taid, int pageid, String data){
         Hashtable<Integer, String> tcontent;
 
         //check if buffer contains transaction information
         if(buffer.contains(taid)){
-            tcontent = buffer.get(taid);
+            //tcontent = buffer.get(taid);
         }
         else {
             //if not: create new Hashtable belonging to specific transaction
             tcontent= new Hashtable<Integer, String>();
-            buffer.put(taid, tcontent);
+            //buffer.put(taid, tcontent);
         }
-        tcontent.put(pageid, data);
+        //tcontent.put(pageid, data);
+        return false;
+    }
+
+
+    public boolean writeToFile(int taid, int pageid, String data){
+
+        return false;
+    }
+
+
+    public boolean writeLogTran(int LSN, int taid, int pageid, String data ){
+        return false;
+    }
+
+    public boolean writeLogEOT(int LSN, int taid, int pageid){
         return false;
     }
 

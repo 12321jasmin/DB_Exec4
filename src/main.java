@@ -1,38 +1,77 @@
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.Scanner;
-
+<<<<<<< HEAD
 import org.apache.commons.cli.*;
 
+public class main{
+=======
+
 public class main {
+>>>>>>> 67410e6cdba12d4f03990f85a5aad021b6829df2
 
-    private static final String SAVE = "s";
-    private static final String CANCEL = "c";
-
-    public static void main(String args[]) throws ParseException {
-        //BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+    public static void main(String args[]) {
+        String taid;
 
         Scanner sc = new Scanner(System.in);
 
-        //User user = new User("Peter", 10);
-        //PersistenceManager pm = PersistenceManager.getInstance();#
+        PersistenceManager pm = PersistenceManager.getInstance();
 
-        Options options = new Options();
-        options.addOption("t", true, "display current time");
+        System.out.println("Welcome to the the database. You have to following options:");
+        System.out.println("start - Will start the transaction");
 
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse( options, args);
+        while (true) {
+            while (true) {
+                String input = sc.nextLine();
 
-        if(cmd.hasOption("t")) {
-            System.out.println("test");
+                if (input.contains("start")) {
+                    pm.beginTransaction();
+                    System.out.println("Your transaction has started. You can now insert data");
+                    break;
+                } else {
+                    System.out.println("Wrong command. Type: start");
+                }
+            }
+
+            while (true) {
+                String[] inputData = new String[0];
+
+                if (inputData[0]!=null) {
+                    System.out.println("save - To save your data in the database.");
+                }
+
+                System.out.println("add [ID] [DATA] - To add data to the database. ID has to be an integer.");
+
+                String input = sc.nextLine();
+                inputData = input.split(" ");
+
+                if (inputData.length == 3 && inputData[0].equals("add") && isNumeric(inputData[1])) {
+                    System.out.println("geschafft");
+                    input = sc.nextLine();
+                    System.out.println("geschafft");
+                } else if (input.equals("end")) {
+                    System.out.println("You have ended the transaction. The data will be now be saved");
+                    //pm.endtransaction()
+                }
+
+            }
         }
-        else {
-            // print the date
-        }
-        System.out.println("Enter username");
 
-        String userName = sc.nextLine();  // Read user input
-        System.out.println("Username is: " + userName);  // Output user input
+    }
+
+    public static boolean isNumeric(final String str) {
+
+        // null or empty
+        if (str == null || str.length() == 0) {
+            return false;
+        }
+
+        for (char c : str.toCharArray()) {
+            if (!Character.isDigit(c)) {
+                return false;
+            }
+        }
+
+        return true;
+
     }
 
 }
