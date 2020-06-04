@@ -2,6 +2,9 @@
   <artifact type="jar" name="DB_Exec4:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/DB_Exec4_jar</output-path>
     <root id="archive" name="DB_Exec4.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/../Datenbanken/CLI/src/main/resources/META-INF/MANIFEST.MF" />
+      </element>
       <element id="module-output" name="Exercis4" />
       <element id="module-output" name="CLI" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/commons-cli-1.4.jar" path-in-jar="/" />
