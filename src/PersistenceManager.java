@@ -10,8 +10,8 @@ public class PersistenceManager {
     private static PersistenceManager single_instance = null;
 
     // variable of type String
-    public Hashtable<Integer, String> buffer = new Hashtable<Integer, String> ();
-    public Hashtable<Integer, Set<Integer>> activeTrans = new Hashtable<Integer, Set<Integer>> ();
+    public Hashtable<Integer, String> buffer = new Hashtable<Integer, String> (); //pageid zu userdata
+    public Hashtable<Integer, Hashtable<Integer, Integer>> activeTrans = new Hashtable<Integer, Hashtable<Integer, Integer>> (); // transactionid, pageid LSN
     public int ptaid = 0;
     public int ptLSN = 0;
 
@@ -24,15 +24,17 @@ public class PersistenceManager {
     // static method to create instance of Singleton class
     public static PersistenceManager getInstance()
     {
-        if (single_instance == null)
+        if (single_instance == null){
             single_instance = new PersistenceManager();
+            //TODO:  taid und LSN aus logfile auslesen
+        }
 
         return single_instance;
     }
 
     public int beginTransaction(){
         ptaid ++;
-        activeTrans.put(ptaid, new HashSet<Integer>());
+        activeTrans.put(ptaid, new Hashtable<Integer,Integer>());
         return ptaid;
     }
 
@@ -41,16 +43,30 @@ public class PersistenceManager {
         return ptLSN;
     }
 
-    public boolean endTransaction(int taid){
-        Set<Integer> modifiedPages = activeTrans.get(taid);
+    public boolean endTransaction(int taid) {
+        int LSN = getLSN();
+        try {
+            writeLogEOT(LSN, taid);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
 
+        //get modified pages
+        Hashtable<Integer, Integer> modifiedEntries = activeTrans.get(taid);
+        Set<Integer> modifiedPages = modifiedEntries.keySet();
         Iterator itr = modifiedPages.iterator();
 
         //make all modified pages persistent
         while(itr.hasNext()){
             int pageid = (int) itr.next();
             String data = buffer.get(pageid);
-            writeToFile(taid, pageid, data);
+            try {
+                writeToFile(modifiedEntries.get(pageid), pageid, data);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
 
             //remove from buffer
             buffer.remove(pageid);
@@ -59,7 +75,7 @@ public class PersistenceManager {
 
         //state transaction as completed
         activeTrans.remove(taid);
-        return false;
+        return true;
     }
 
 
@@ -67,49 +83,62 @@ public class PersistenceManager {
         int LSN = getLSN();
         Hashtable<Integer, String> tcontent;
 
-        //check if buffer contains transaction information
-        if(buffer.contains(pageid)){
-            //page modified, no change possible
-            return false;
-        }
-        else {
-            //if not: create new Hashtable belonging to specific transaction
+        //add userdata to buffer
+        buffer.put(pageid, data);
 
-            //add userdata to buffer
-            buffer.put(pageid, data);
+        //add modified page to transactionid
+        Hashtable<Integer, Integer> modifiedPages = activeTrans.get(taid);
+        modifiedPages.put(pageid, LSN);
 
-            //add modified page to transactionid
-            Set<Integer> modifiedPages = activeTrans.get(pageid);
-            modifiedPages.add(LSN);
-
-            //do logentry
+        //do logentry
+        try {
             writeLogTran(LSN, taid, pageid, data);
-            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return true;
+
     }
 
 
-    public boolean writeToFile(int taid, int pageid, String data){
+    //writes userdata to pageid
+    public boolean writeToFile(int LSN, int pageid, String data) throws IOException {
+
+        //open filewriter
+        FileWriter logWriter = new FileWriter("page_" + Integer.toString(pageid) + ".txt");
+        String logEntry = Integer.toString(LSN) + ", " +  Integer.toString(pageid) + ", " + data;
+        logWriter.write(logEntry);
+
+        //new line
+        logWriter.write(System.getProperty("line.separator"));
+
+        //close Writer
+        logWriter.close();
+
+
 
         return false;
     }
 
 
+    //logentry for transaction
     public boolean writeLogTran(int LSN, int taid, int pageid, String data ) throws IOException {
 
+        //check if file exists
         File logFile = new File("logFile.txt");
         if (!logFile.exists()) {
+            System.out.println("new Logfile Created");
             logFile.createNewFile();
         }
 
-        FileWriter logWriter = new FileWriter(logFile);
+        //open filewriter
+        FileWriter logWriter = new FileWriter(logFile, true);
         String logEntry = Integer.toString(LSN) + ", " + Integer.toString(taid) +
                 ", " +  Integer.toString(pageid) + ", " + data;
-        logWriter.write(logEntry);
-
+        logWriter.append(logEntry);
 
         //new line
-        logWriter.write(System.getProperty("line.separator"));
+        logWriter.append(System.getProperty("line.separator"));
 
         //close Writer
         logWriter.close();
@@ -117,21 +146,23 @@ public class PersistenceManager {
         return true;
     }
 
+
+    //logentry for end of transaction
     public boolean writeLogEOT(int LSN, int taid) throws IOException {
 
         File logFile = new File("logFile.txt");
         if (!logFile.exists()) {
+            System.out.println("new Logfile Created");
             logFile.createNewFile();
         }
 
-        FileWriter logWriter = new FileWriter(logFile);
+        FileWriter logWriter = new FileWriter(logFile, true);
         String logEntry = Integer.toString(LSN) + ", " + Integer.toString(taid) +
                 ", EOT" ;
-        logWriter.write(logEntry);
-
+        logWriter.append(logEntry);
 
         //new line
-        logWriter.write(System.getProperty("line.separator"));
+        logWriter.append(System.getProperty("line.separator"));
 
         //close Writer
         logWriter.close();
@@ -139,5 +170,8 @@ public class PersistenceManager {
         return true;
     }
 
+    public boolean recover(){
+        return false;
+    }
 
 }
