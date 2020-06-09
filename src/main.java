@@ -12,6 +12,7 @@ public class main {
 
         System.out.println("Welcome to the the database. You have to following options:");
         System.out.println("start - Will start the transaction");
+        System.out.println("recover - Will start recover");
 
         while (true) {
             while (true) {
@@ -20,6 +21,7 @@ public class main {
                 if (input.contains("start")) {
                     ptaid = pm.beginTransaction();
                     System.out.println("Your transaction has started. You can now insert data");
+                    System.out.println("test - Will start a test");
                     break;
                 } else if (input.contains("recover")) {
                     if(pm.recover()){
@@ -64,6 +66,7 @@ public class main {
                         pm.write(ptaid,i,Integer.toString(pm.random()));
                         try {
                             Thread.sleep(1000);
+                            System.out.println("[Transaktion] " + i);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -73,6 +76,7 @@ public class main {
                         }
                     }
                     pm.endTransaction(ptaid);
+                    System.out.println("[Test is over]");
                 } else {
                     System.out.println("Wrong command");
                 }
