@@ -97,6 +97,11 @@ public class PersistenceManager {
             System.out.println("Writing Transaction into Log not possible");
             return false;
         }
+
+        if(buffer.size() >= 5) {
+            writeBuffer(true);
+        }
+
         return true;
 
 
@@ -249,7 +254,7 @@ public class PersistenceManager {
 
 
         //make persistent entries
-        writeBuffer();
+        writeBuffer(false);
 
 
         return true;
@@ -265,7 +270,7 @@ public class PersistenceManager {
         return true;
     }
 
-    public boolean writeBuffer(){
+    public boolean writeBuffer(Boolean b){
         //get modified pages
         Set<Integer> activeTs = activeTrans.keySet();
         Iterator itr = activeTs.iterator();
@@ -285,7 +290,12 @@ public class PersistenceManager {
                 int pageid = (int) itr.next();
                 String data = buffer.get(pageid);
                 try {
-                    writeToFile(getLSN(), pageid, data);
+                    if(b){
+                        writeToFile(getLSN(), pageid, data);
+                    } else
+                    {
+                        writeToFile(modifiedEntries.get(pageid), pageid, data);
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                     return false;
@@ -297,7 +307,7 @@ public class PersistenceManager {
             }
 
         }
-        
+
         return true;
 
     }
