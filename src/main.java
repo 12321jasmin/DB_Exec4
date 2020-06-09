@@ -21,7 +21,11 @@ public class main {
                     System.out.println("Your transaction has started. You can now insert data");
                     break;
                 } else if (input.contains("recover")) {
-                    //TODO AUSFueHREN
+                    if(pm.recover()){
+                        System.out.println("Recovery successfull");
+                    } else {
+                        System.out.println("Recovery failed");
+                    }
                 }
                 else {
                     System.out.println("Wrong command. Type: start");
@@ -29,6 +33,7 @@ public class main {
             }
 
             while (true) {
+
                 String[] inputData = new String[0];
 
                 if (inputData != null && inputData.length > 0) {
@@ -52,6 +57,8 @@ public class main {
                     }
                     System.out.println("start - Will start a new transaction");
                     break;
+                } else if (input.equals("test")){
+                    System.out.println("Testcase started");
                 } else {
                     System.out.println("Wrong command");
                 }

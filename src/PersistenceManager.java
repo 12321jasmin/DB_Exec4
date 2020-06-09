@@ -10,8 +10,8 @@ public class PersistenceManager {
     // variable of type String
     public Hashtable<Integer, String> buffer = new Hashtable<Integer, String> (); //pageid zu userdata
     public Hashtable<Integer, Hashtable<Integer, Integer>> activeTrans = new Hashtable<Integer, Hashtable<Integer, Integer>> (); // transactionid, pageid LSN
-    public int ptaid = 0;
-    public int ptLSN = 0;
+    public int ptaid = 0; //public transaction id
+    public int ptLSN = 0; //public log sequence number
 
     // private constructor restricted to this class itself
     private PersistenceManager()
@@ -88,21 +88,17 @@ public class PersistenceManager {
         Hashtable<Integer, Integer> modifiedPages = activeTrans.get(taid);
         modifiedPages.put(pageid, LSN);
 
-            //add modified page to transactionid
-            Set<Integer> modifiedPages = activeTrans.get(pageid);
-            modifiedPages.add(LSN);
 
-            //do logentry
-            try {
-                writeLogTran(LSN, taid, pageid, data);
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.out.println("Writing Transaction into Log not possible");
-                return false;
-            }
-            return true;
+        //do logentry
+        try {
+            writeLogTran(LSN, taid, pageid, data);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Writing Transaction into Log not possible");
+            return false;
         }
         return true;
+
 
     }
 
@@ -112,7 +108,7 @@ public class PersistenceManager {
 
         //open filewriter
         FileWriter logWriter = new FileWriter("page_" + Integer.toString(pageid) + ".txt");
-        String logEntry = Integer.toString(LSN) + ", " +  Integer.toString(pageid) + ", " + data;
+        String logEntry = Integer.toString(LSN) + "," +  Integer.toString(pageid) + "," + data;
         logWriter.write(logEntry);
 
         //new line
@@ -133,14 +129,14 @@ public class PersistenceManager {
         //check if file exists
         File logFile = new File("logFile.txt");
         if (!logFile.exists()) {
-            System.out.println("new Logfile Created");
+            System.out.println("New Logfile Created");
             logFile.createNewFile();
         }
 
         //open filewriter
         FileWriter logWriter = new FileWriter(logFile, true);
-        String logEntry = Integer.toString(LSN) + ", " + Integer.toString(taid) +
-                ", " +  Integer.toString(pageid) + ", " + data + ";";
+        String logEntry = Integer.toString(LSN) + "," + Integer.toString(taid) +
+                "," +  Integer.toString(pageid) + "," + data + ";";
         logWriter.write(logEntry);
 
 
@@ -164,8 +160,8 @@ public class PersistenceManager {
         }
 
         FileWriter logWriter = new FileWriter(logFile, true);
-        String logEntry = Integer.toString(LSN) + ", " + Integer.toString(taid) +
-                ", EOT;" ;
+        String logEntry = Integer.toString(LSN) + "," + Integer.toString(taid) +
+                ",EOT;" ;
         logWriter.write(logEntry);
 
 
@@ -178,9 +174,6 @@ public class PersistenceManager {
         return true;
     }
 
-    public boolean recover(){
-        return false;
-    }
 
     public boolean recover(){
         File logFile = new File("logFile.txt");
@@ -196,8 +189,34 @@ public class PersistenceManager {
         }
         logScanner.useDelimiter(";");
 
+        ArrayList<String[]> logEntries = new ArrayList<String[]>();
+        while(logScanner.hasNext()) {
+            logEntries.add(logScanner.next().split(","));
+        }
 
-        return false;
+
+        //determine winners
+        ListIterator itr = logEntries.listIterator();
+        String[] currentEntry;
+        Set<Integer> winner = new HashSet<>();
+        String eot = " EOT";
+        String eotTest;
+        while(itr.hasNext()){
+            currentEntry = (String[]) itr.next();
+            if(currentEntry.length > 1){
+                System.out.println("CurrentEntry "+ currentEntry[0] + currentEntry[1] +  currentEntry[2]);
+                System.out.println("Datatype: " + currentEntry[2].getClass());
+                System.out.println("Datatype: " + currentEntry[2]);
+                eotTest = currentEntry[2];
+                if(currentEntry[2].equals("EOT")){
+
+                    winner.add(Integer.valueOf(currentEntry[1]));
+                    System.out.println("Successful Transaction: " + currentEntry[1]);
+                }
+            }
+        }
+
+        return true;
     }
 
 
