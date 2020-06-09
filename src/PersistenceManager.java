@@ -31,12 +31,75 @@ public class PersistenceManager {
     }
 
     public int beginTransaction(){
+        File logFile = new File("logFile.txt");
+        if (logFile.exists()) {
+            Scanner logScanner = null;
+            String lastEntry = "";
+            String lastEntry2 = "";
+            try {
+                logScanner = new Scanner(logFile);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            logScanner.useDelimiter(";");
+            Integer i = 0;
+            while(logScanner.hasNext()){
+                if((i%2) == 0){
+                    lastEntry = logScanner.next();
+                    i++;
+                } else {
+                    lastEntry2 = logScanner.next();
+                    i++;
+                }
+            }
+
+            if((i%2) == 0){
+                lastEntry= lastEntry2;
+            }
+            String[] lastEntries = lastEntry.split(",");
+            Integer lasttaid= Integer.valueOf(lastEntries[1].replace("\n", ""));
+            if(lasttaid> ptaid) {
+                ptaid = lasttaid;
+            }
+        }
         ptaid ++;
         activeTrans.put(ptaid, new Hashtable<Integer,Integer>());
         return ptaid;
     }
 
     public int getLSN(){
+        File logFile = new File("logFile.txt");
+        if (logFile.exists()) {
+            Scanner logScanner = null;
+            String lastEntry = "";
+            String lastEntry2 = "";
+            try {
+                logScanner = new Scanner(logFile);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+            logScanner.useDelimiter(";");
+            Integer i = 0;
+            while(logScanner.hasNext()){
+                if((i%2) == 0){
+                    lastEntry = logScanner.next();
+                    i++;
+                } else {
+                    lastEntry2 = logScanner.next();
+                    i++;
+                }
+            }
+
+            if((i%2) == 0){
+                lastEntry= lastEntry2;
+            }
+            String[] lastEntries = lastEntry.split(",");
+            Integer lastLSN = Integer.valueOf(lastEntries[0].replace("\n", ""));
+            if(lastLSN > ptLSN) {
+                ptLSN = lastLSN;
+            }
+        }
+
         ptLSN ++;
         return ptLSN;
     }
@@ -99,7 +162,7 @@ public class PersistenceManager {
         }
 
         if(buffer.size() >= 5) {
-            writeBuffer(true);
+            writeBuffer(false);
         }
 
         return true;
@@ -140,13 +203,10 @@ public class PersistenceManager {
 
         //open filewriter
         FileWriter logWriter = new FileWriter(logFile, true);
-        String logEntry = Integer.toString(LSN) + "," + Integer.toString(taid) +
+        String logEntry = "\n" + Integer.toString(LSN) + "," + Integer.toString(taid) +
                 "," +  Integer.toString(pageid) + "," + data + ";";
         logWriter.write(logEntry);
 
-
-        //new line
-        logWriter.append("\n");
 
         //close Writer
         logWriter.close();
@@ -165,13 +225,11 @@ public class PersistenceManager {
         }
 
         FileWriter logWriter = new FileWriter(logFile, true);
-        String logEntry = Integer.toString(LSN) + "," + Integer.toString(taid) +
+        String logEntry = "\n" + Integer.toString(LSN) + "," + Integer.toString(taid) +
                 ",EOT;" ;
         logWriter.write(logEntry);
 
 
-        //new line
-        logWriter.append("\n");
 
         //close Writer
         logWriter.close();
@@ -213,7 +271,7 @@ public class PersistenceManager {
             if(currentLogEntry.length > 1){
                 eotTest = currentLogEntry[2];
                 if(currentLogEntry[2].equals("EOT")){
-                    activeTrans.put(Integer.valueOf(currentLogEntry[1]), new Hashtable<Integer,Integer>());
+                    activeTrans.put(Integer.valueOf(currentLogEntry[1].replace("\n","")), new Hashtable<Integer,Integer>());
                     System.out.println("Successful Transaction: " + currentLogEntry[1]);
                 }
             }
@@ -235,9 +293,11 @@ public class PersistenceManager {
                 logtaid = Integer.valueOf(currentLogEntry[1].replace("\n", ""));
                 logpageid = Integer.valueOf(currentLogEntry[2].replace("\n", ""));
                 logdata = currentLogEntry[3].replace("\n", "");
-                System.out.println("Compares "+ Integer.toString(logLSN)+ " with " + getPageLSN(logpageid));
+                //System.out.println("Compares "+ Integer.toString(logLSN)+ " with " + getPageLSN(logpageid));
                 pageLSN = getPageLSN(logpageid);
-                if(activeTrans.contains(logtaid)){
+                System.out.println(Integer.toString(logtaid));
+                if(activeTrans.containsKey(logtaid)){
+                    System.out.println(pageLSN + logLSN);
                     if(pageLSN < logLSN){
                         System.out.println("Update page necessary.");
                         updateBuffer(logtaid, logpageid, logdata);
@@ -254,7 +314,7 @@ public class PersistenceManager {
 
 
         //make persistent entries
-        writeBuffer(false);
+        writeBuffer(true);
 
 
         return true;
