@@ -216,8 +216,15 @@ public class PersistenceManager {
             }
         }
 
+        //redo process
+
         return true;
     }
+
+    public Integer random(){
+        return hashCode();
+    }
+
 
 
 }
