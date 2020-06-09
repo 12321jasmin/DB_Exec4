@@ -141,7 +141,7 @@ public class PersistenceManager {
 
 
         //new line
-        logWriter.append(System.getProperty("line.separator"));
+        logWriter.append("\n");
 
         //close Writer
         logWriter.close();
@@ -166,7 +166,7 @@ public class PersistenceManager {
 
 
         //new line
-        logWriter.append(System.getProperty("line.separator"));
+        logWriter.append("\n");
 
         //close Writer
         logWriter.close();
@@ -176,6 +176,9 @@ public class PersistenceManager {
 
 
     public boolean recover(){
+        buffer = new Hashtable<Integer, String> (); //pageid zu userdata
+        activeTrans = new Hashtable<Integer, Hashtable<Integer, Integer>> (); // transactionid, pageid LSN
+
         File logFile = new File("logFile.txt");
         if (!logFile.exists()) {
             return true;
@@ -197,34 +200,146 @@ public class PersistenceManager {
 
         //determine winners
         ListIterator itr = logEntries.listIterator();
-        String[] currentEntry;
-        Set<Integer> winner = new HashSet<>();
+        String[] currentLogEntry;
         String eot = " EOT";
         String eotTest;
         while(itr.hasNext()){
-            currentEntry = (String[]) itr.next();
-            if(currentEntry.length > 1){
-                System.out.println("CurrentEntry "+ currentEntry[0] + currentEntry[1] +  currentEntry[2]);
-                System.out.println("Datatype: " + currentEntry[2].getClass());
-                System.out.println("Datatype: " + currentEntry[2]);
-                eotTest = currentEntry[2];
-                if(currentEntry[2].equals("EOT")){
-
-                    winner.add(Integer.valueOf(currentEntry[1]));
-                    System.out.println("Successful Transaction: " + currentEntry[1]);
+            currentLogEntry = (String[]) itr.next();
+            if(currentLogEntry.length > 1){
+                eotTest = currentLogEntry[2];
+                if(currentLogEntry[2].equals("EOT")){
+                    activeTrans.put(Integer.valueOf(currentLogEntry[1]), new Hashtable<Integer,Integer>());
+                    System.out.println("Successful Transaction: " + currentLogEntry[1]);
                 }
             }
         }
 
         //redo process
+        itr = logEntries.listIterator();
+        Integer logpageid;
+        Integer logLSN;
+        Integer logtaid;
+        String logdata;
+        Integer pageLSN;
+        String pagedata;
+        ArrayList<String[]> changedEntries = new ArrayList<String[]>();
+        while(itr.hasNext()){
+            currentLogEntry = (String[]) itr.next();
+            if(currentLogEntry.length > 3){
+                logLSN = Integer.parseInt(currentLogEntry[0].replace("\n", ""));
+                logtaid = Integer.valueOf(currentLogEntry[1].replace("\n", ""));
+                logpageid = Integer.valueOf(currentLogEntry[2].replace("\n", ""));
+                logdata = currentLogEntry[3].replace("\n", "");
+                System.out.println("Compares "+ Integer.toString(logLSN)+ " with " + getPageLSN(logpageid));
+                pageLSN = getPageLSN(logpageid);
+                if(activeTrans.contains(logtaid)){
+                    if(pageLSN < logLSN){
+                        System.out.println("Update page necessary.");
+                        updateBuffer(logtaid, logpageid, logdata);
+                    } else if(pageLSN == logLSN){
+                        pagedata = getPageData(logpageid);
+                        if(!logdata.equals(pagedata)){
+                            System.out.println("Update data necessary.");
+                            updateBuffer(logtaid, logpageid, logdata);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        //make persistent entries
+        writeBuffer();
+
 
         return true;
     }
+
+    public boolean updateBuffer(Integer taid, Integer pageid, String data){
+        //add userdata to buffer
+        buffer.put(pageid, data);
+
+        //add modified page to transactionid
+        Hashtable<Integer, Integer> modifiedPages = activeTrans.get(taid);
+        modifiedPages.put(pageid, 0);
+        return true;
+    }
+
+    public boolean writeBuffer(){
+        //get modified pages
+        Set<Integer> activeTs = activeTrans.keySet();
+        Iterator itr = activeTs.iterator();
+        Iterator itr2;
+
+        Hashtable<Integer, Integer> modifiedEntries;
+        Set<Integer> modifiedPages;
+
+        while(itr.hasNext()){
+
+            modifiedEntries = activeTrans.get(itr.next());
+            modifiedPages = modifiedEntries.keySet();
+            itr2 = modifiedPages.iterator();
+
+            //make all modified pages persistent
+            while(itr2.hasNext()){
+                int pageid = (int) itr.next();
+                String data = buffer.get(pageid);
+                try {
+                    writeToFile(getLSN(), pageid, data);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+
+                //remove from buffer
+                buffer.remove(pageid);
+
+            }
+
+        }
+        
+        return true;
+
+    }
+
+
 
     public Integer random(){
         return hashCode();
     }
 
+    private Integer getPageLSN(Integer pageid){
+        File pageFile = new File("page_" + Integer.toString(pageid) + ".txt");
+        if (!pageFile.exists()) {
+            return 0;
+        }
+        Scanner pageScanner = null;
+        try {
+            pageScanner = new Scanner(pageFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        pageScanner.useDelimiter(",");
+        return pageScanner.nextInt();
+    }
+
+    private String getPageData(Integer pageid){        File pageFile = new File("page_" + Integer.toString(pageid) + ".txt");
+        if (!pageFile.exists()) {
+            return "";
+        }
+        Scanner pageScanner = null;
+        try {
+            pageScanner = new Scanner(pageFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        pageScanner.useDelimiter(",");
+        pageScanner.next();
+        pageScanner.next();
+
+        return pageScanner.next();
+
+    }
 
 
 }
