@@ -60,10 +60,10 @@ public class main {
                     break;
                 } else if (input.equals("test")){
                     System.out.println("Testcase started");
-                    for (Integer i = 0; i < 1000; i++ ){
+                    for (Integer i = 0; i < 10; i++ ){
                         pm.write(ptaid,i,Integer.toString(pm.random()));
                         try {
-                            Thread.sleep(1000);
+                            Thread.sleep(10);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
