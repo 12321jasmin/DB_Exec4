@@ -287,7 +287,7 @@ public class PersistenceManager {
 
             //make all modified pages persistent
             while(itr2.hasNext()){
-                int pageid = (int) itr.next();
+                int pageid = (int) itr2.next();
                 String data = buffer.get(pageid);
                 try {
                     if(b){
