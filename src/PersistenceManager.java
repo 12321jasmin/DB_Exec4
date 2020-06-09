@@ -1,6 +1,4 @@
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -83,7 +81,13 @@ public class PersistenceManager {
             modifiedPages.add(LSN);
 
             //do logentry
-            writeLogTran(LSN, taid, pageid, data);
+            try {
+                writeLogTran(LSN, taid, pageid, data);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Writing Transaction into Log not possible");
+                return false;
+            }
             return true;
         }
     }
@@ -104,7 +108,7 @@ public class PersistenceManager {
 
         FileWriter logWriter = new FileWriter(logFile);
         String logEntry = Integer.toString(LSN) + ", " + Integer.toString(taid) +
-                ", " +  Integer.toString(pageid) + ", " + data;
+                ", " +  Integer.toString(pageid) + ", " + data + ";";
         logWriter.write(logEntry);
 
 
@@ -126,7 +130,7 @@ public class PersistenceManager {
 
         FileWriter logWriter = new FileWriter(logFile);
         String logEntry = Integer.toString(LSN) + ", " + Integer.toString(taid) +
-                ", EOT" ;
+                ", EOT;" ;
         logWriter.write(logEntry);
 
 
@@ -137,6 +141,25 @@ public class PersistenceManager {
         logWriter.close();
 
         return true;
+    }
+
+
+    public boolean recover(){
+        File logFile = new File("logFile.txt");
+        if (!logFile.exists()) {
+            return true;
+        }
+
+        Scanner logScanner = null;
+        try {
+            logScanner = new Scanner(logFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        logScanner.useDelimiter(";");
+        
+
+        return false;
     }
 
 
